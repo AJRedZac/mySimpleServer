@@ -1,35 +1,56 @@
-console.log("Iniciando el servidor...");
-
 const express = require('express');
-const fs = require('fs');
+const { Pool } = require('pg'); // Import PostgreSQL client
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-
-console.log("Servidor configurado, configurando rutas...");
-
-// Root route
-app.get('/', (req, res) => {
-    res.send('Welcome to My Simple Server!');
+// Configure the PostgreSQL connection
+const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: {
+        rejectUnauthorized: false, // Render requires SSL with this configuration
+    },
 });
 
-
-app.get('/register-visit', (req, res) => {
-    console.log("Se recibió una solicitud a /register-visit");
+// Route to register a visit
+app.get('/register-visit', async (req, res) => {
     const ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
-    const visit = { ip, timestamp: new Date().toISOString() };
+    const userAgent = req.headers['user-agent'];
+    const referer = req.headers['referer'] || 'Direct Access';
+    const method = req.method;
+    const path = req.path;
+    const protocol = req.protocol;
+    const acceptedLanguages = req.headers['accept-language'];
+    const timestamp = new Date().toISOString();
 
-    fs.appendFile('visits.log', JSON.stringify(visit) + '\n', (err) => {
-        if (err) {
-            console.error('Error al registrar visita:', err);
-            res.status(500).send('Error interno del servidor');
-        } else {
-            res.status(200).send('Visita registrada');
-        }
-    });
+    try {
+        // Insert the visit into the database
+        await pool.query(
+            `INSERT INTO visits (ip, user_agent, referer, method, path, protocol, accepted_languages, timestamp) 
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+            [ip, userAgent, referer, method, path, protocol, acceptedLanguages, timestamp]
+        );
+
+        console.log('Visit registered:', { ip, userAgent, referer, method, path, protocol, acceptedLanguages, timestamp });
+        res.status(200).send('Visit registered');
+    } catch (err) {
+        console.error('Error storing visit:', err);
+        res.status(500).send('Error storing visit');
+    }
 });
 
+// Route to fetch all visits (for debugging)
+app.get('/visits', async (req, res) => {
+    try {
+        const result = await pool.query('SELECT * FROM visits');
+        res.status(200).json(result.rows);
+    } catch (err) {
+        console.error('Error fetching visits:', err);
+        res.status(500).send('Error fetching visits');
+    }
+});
+
+// Start the server
 app.listen(PORT, () => {
-    console.log(`Servidor corriendo en http://localhost:${PORT}`);
+    console.log(`Server running on http://localhost:${PORT}`);
 });
