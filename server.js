@@ -1,7 +1,7 @@
 const express = require('express');
 const { Pool } = require('pg'); // Import PostgreSQL client
 const bodyParser = require('body-parser'); // Middleware to parse JSON
-
+const cors = require('cors');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -13,6 +13,14 @@ const pool = new Pool({
         rejectUnauthorized: false, // Render requires SSL with this configuration
     },
 });
+
+
+
+// Configure CORS to allow requests from your frontend
+app.use(cors({
+  origin: 'https://ajredzac.github.io', // Allow requests only from this origin
+}));
+
 
 // Middleware
 app.use(bodyParser.json()); // Parse incoming JSON request bodies
