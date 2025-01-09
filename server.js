@@ -14,8 +14,8 @@ const pool = new Pool({
 
 // Route to register a visit
 app.get('/register-visit', async (req, res) => {
-    const ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
-    const userAgent = req.headers['user-agent'];
+    const ip = (req.headers['x-forwarded-for'] || req.connection.remoteAddress).split(',')[0].trim();
+    const userAgent = (req.headers['user-agent'] || '').substring(0, 255);
     const referer = req.headers['referer'] || 'Direct Access';
     const method = req.method;
     const path = req.path;
