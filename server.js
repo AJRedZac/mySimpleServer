@@ -1,5 +1,7 @@
 const express = require('express');
 const { Pool } = require('pg'); // Import PostgreSQL client
+const bodyParser = require('body-parser'); // Middleware to parse JSON
+
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -12,6 +14,41 @@ const pool = new Pool({
     },
 });
 
+// Middleware
+app.use(bodyParser.json()); // Parse incoming JSON request bodies
+
+
+// Route to register a visit
+app.post('/register-visit', async (req, res) => {
+  // Extract visitor data from request
+  const { referrer, userAgent, language, path, protocol, method } = req.body;
+
+  // Detect visitor IP address (prefer x-forwarded-for if behind a proxy)
+  const ip = (req.headers['x-forwarded-for'] || req.connection.remoteAddress).split(',')[0].trim();
+
+  // Get current timestamp
+  const timestamp = new Date().toISOString();
+
+  try {
+    // Insert visit data into the database
+    await pool.query(
+      `INSERT INTO visits (ip, user_agent, referer, method, path, protocol, accepted_languages, timestamp)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+      [ip, userAgent, referrer, method, path, protocol, language, timestamp]
+    );
+
+    console.log('Visit registered:', { ip, userAgent, referrer, method, path, protocol, language, timestamp });
+    res.status(200).send('Visit registered');
+  } catch (err) {
+    console.error('Error storing visit:', err);
+    res.status(500).send('Error storing visit');
+  }
+});
+
+
+
+
+/*
 // Route to register a visit
 app.get('/register-visit', async (req, res) => {
     const ip = (req.headers['x-forwarded-for'] || req.connection.remoteAddress).split(',')[0].trim();
@@ -39,7 +76,7 @@ app.get('/register-visit', async (req, res) => {
         console.error('Error storing visit:', err);
         res.status(500).send('Error storing visit');
     }
-});
+});*/
 
 // Route to fetch all visits (for debugging)
 app.get('/visits', async (req, res) => {
