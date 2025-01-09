@@ -6,7 +6,14 @@ const fs = require('fs');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+
 console.log("Servidor configurado, configurando rutas...");
+
+// Root route
+app.get('/', (req, res) => {
+    res.send('Welcome to My Simple Server!');
+});
+
 
 app.get('/register-visit', (req, res) => {
     console.log("Se recibió una solicitud a /register-visit");
