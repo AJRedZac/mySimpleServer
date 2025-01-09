@@ -23,6 +23,8 @@ app.get('/register-visit', async (req, res) => {
     const acceptedLanguages = req.headers['accept-language'];
     const timestamp = new Date().toISOString();
 
+	console.log('Visit registered:', { ip, userAgent, referer, method, path, protocol, acceptedLanguages, timestamp });
+	
     try {
         // Insert the visit into the database
         await pool.query(
@@ -31,7 +33,7 @@ app.get('/register-visit', async (req, res) => {
             [ip, userAgent, referer, method, path, protocol, acceptedLanguages, timestamp]
         );
 
-        console.log('Visit registered:', { ip, userAgent, referer, method, path, protocol, acceptedLanguages, timestamp });
+        console.log('Visit registered in DB:', { ip, userAgent, referer, method, path, protocol, acceptedLanguages, timestamp });
         res.status(200).send('Visit registered');
     } catch (err) {
         console.error('Error storing visit:', err);
